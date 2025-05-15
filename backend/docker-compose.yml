@@ -1,0 +1,52 @@
+version: '3.9'
+
+services:
+  go-backend:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    container_name: go-backend
+    image: amorv/go-backend:latest
+    networks:
+      - backend-network
+    environment:
+      PORT: 8080
+      DB_ENDPOINT: backend-postgres
+      DB_PORT: 5432
+      DB_USER: course_user
+      DB_PASS: course_pass
+      DB_NAME: course_db
+      DEBUG: "true"
+      REDIS_ENDPOINT: backend-redis
+      REDIS_PORT: 6379
+    ports:
+      - "8080:8080"
+    depends_on:
+      - backend-postgres
+      - backend-redis
+
+  backend-postgres:
+    image: postgres:15
+    container_name: backend-postgres
+    restart: unless-stopped
+    networks:
+      - backend-network
+    environment:
+      POSTGRES_DB: course_db
+      POSTGRES_USER: course_user
+      POSTGRES_PASSWORD: course_pass
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./db_schema.sql:/docker-entrypoint-initdb.d/schema.sql:ro
+    ports:
+      - "5433:5432"
+
+  backend-redis:
+    image: redis:7
+    container_name: backend-redis
+    restart: unless-stopped
+    networks:
+      - backend-network
+
+volumes:
+  pgdata:
